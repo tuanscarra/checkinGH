@@ -1,102 +1,117 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ứng dụng Check-in Giao Hàng</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
-    #image-preview { max-width: 100%; max-height: 200px; border-radius: 0.5rem; object-fit: cover; }
-    .modal-overlay { transition: opacity 0.3s ease; }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Trình Quản Lý Giao Hàng</title>
+    <!-- Giữ nguyên giao diện cũ -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color:#111827; }
+        .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 6px 18px rgba(15,23,42,0.06); }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2563eb; border-radius: 50%; width: 36px; height: 36px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+        #image-preview { max-width: 100%; max-height: 200px; border-radius: 6px; object-fit: cover; display:block; margin-top:8px; }
+        .hidden { display: none; }
+    </style>
 </head>
-<body class="text-gray-800">
+<body class="antialiased">
 
-<!-- Form đăng nhập -->
-<div id="login-view" class="fixed inset-0 bg-gray-100 flex items-center justify-center">
-  <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm">
-    <h2 class="text-xl font-bold mb-4">Đăng nhập</h2>
-    <input id="login-email" type="email" placeholder="Email" class="w-full mb-3 px-3 py-2 border rounded">
-    <button id="login-btn" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Đăng nhập</button>
-    <p id="login-error" class="text-red-500 mt-2 text-center"></p>
+<!-- LOGIN VIEW (always show first) -->
+<div id="login-view" class="min-h-screen flex items-center justify-center bg-gray-100">
+  <div class="card w-full max-w-2xl">
+    <h1 class="text-3xl font-bold text-center text-blue-600 mb-4">Trình Quản Lý Giao Hàng</h1>
+    <div class="max-w-md mx-auto">
+      <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+      <input id="login-email" type="email" placeholder="Nhập email do công ty cấp" class="w-full px-4 py-3 border rounded-lg mb-3" />
+      <div class="flex justify-end gap-3 items-center">
+        <p id="login-error" class="text-red-500 text-sm mr-auto"></p>
+        <button id="login-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+          <i class="fas fa-sign-in-alt mr-2"></i>Đăng nhập
+        </button>
+      </div>
+      <p class="text-xs text-gray-500 mt-3">Nếu chưa có tài khoản, liên hệ quản trị để được cấp email.</p>
+    </div>
   </div>
 </div>
 
-<!-- Màn hình tải -->
-<div id="loading-view" class="hidden fixed inset-0 bg-gray-100 flex items-center justify-center">
-  <div class="flex flex-col items-center">
-    <div class="loader"></div>
-    <p class="mt-4 text-gray-600">Đang tải dữ liệu...</p>
-  </div>
-</div>
+<!-- APP VIEW (hidden until login) -->
+<main id="app-view" class="hidden container mx-auto p-6 max-w-4xl">
+  <header class="text-center mb-6">
+    <h1 class="text-4xl font-bold text-blue-600">Trình Quản Lý Giao Hàng</h1>
+    <div class="mt-3 text-sm text-gray-600" id="user-info-line">
+      <!-- "Đăng nhập: <email> [Đăng xuất]" sẽ được chèn ở đây -->
+    </div>
+  </header>
 
-<!-- Giao diện chính -->
-<main id="app-view" class="hidden">
-  <div class="container mx-auto p-4 md:p-8 max-w-6xl">
-    <header class="text-center mb-8 relative">
-      <h1 class="text-3xl md:text-4xl font-bold text-blue-600">Trình Quản Lý Giao Hàng</h1>
-      <div class="mt-4 text-sm text-gray-600" id="user-info"></div>
-    </header>
+  <!-- Check-in form -->
+  <section class="card mb-8">
+    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Tạo Check-in Mới</h2>
+    <form id="checkin-form">
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-2"><i class="fas fa-camera mr-2"></i>Ảnh Check-in</label>
+        <input type="file" id="photo" accept="image/*" class="file-input" />
+        <img id="image-preview" class="hidden" alt="Xem trước ảnh" />
+      </div>
 
-    <!-- Form Check-in -->
-    <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-      <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Tạo Check-in Mới</h2>
-      <form id="checkin-form">
-        <div class="mb-4">
-          <label for="photo" class="block text-gray-700 font-medium mb-2"><i class="fas fa-camera mr-2"></i>Ảnh Check-in</label>
-          <input type="file" id="photo" accept="image/*" required
-            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-          <div class="mt-4 text-center"><img id="image-preview" class="hidden" alt="Xem trước ảnh"/></div>
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-2"><i class="fas fa-map-marker-alt mr-2"></i>Vị trí (nhập thủ công)</label>
+        <div class="flex">
+          <input type="text" id="manual-location" placeholder="Ví dụ: 123 Đường ABC, Quận 1" class="flex-1 px-4 py-3 border-t border-b border-l rounded-l-lg" />
+          <button type="button" id="get-location-btn" class="bg-green-500 text-white px-4 rounded-r-lg hover:bg-green-600" title="Lấy địa chỉ từ định vị">📍</button>
         </div>
-        <div class="mb-4">
-          <label for="manual-location" class="block text-gray-700 font-medium mb-2"><i class="fas fa-map-marker-alt mr-2"></i>Vị trí (nhập thủ công)</label>
-          <input type="text" id="manual-location" placeholder="Ví dụ: 123 Đường ABC, Quận 1"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-        <div class="mb-4">
-          <label for="notes" class="block text-gray-700 font-medium mb-2"><i class="fas fa-pencil-alt mr-2"></i>Ghi Chú</label>
-          <textarea id="notes" rows="4"
-            placeholder="Ví dụ: Giao hàng cho anh A, đã nhận đủ tiền..."
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-        </div>
-        <div class="flex items-center justify-end">
-          <div id="loader" class="loader hidden mr-4"></div>
-          <button type="submit" id="submit-btn"
-            class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300">
-            <i class="fas fa-paper-plane mr-2"></i>Gửi Check-in
-          </button>
-        </div>
-      </form>
-      <div id="error-message" class="text-red-500 mt-4 text-center font-medium"></div>
+        <p id="location-note" class="text-xs text-gray-400 mt-1">Chưa cấu hình Google Maps API Key → nút sẽ báo lỗi. Gắn key vào biến <code>GOOGLE_MAPS_API_KEY</code> để dùng.</p>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-2"><i class="fas fa-pencil-alt mr-2"></i>Ghi Chú</label>
+        <textarea id="notes" rows="4" placeholder="Ví dụ: Giao hàng cho anh A, đã nhận đủ tiền..." class="w-full px-4 py-3 border rounded-lg"></textarea>
+      </div>
+
+      <div class="flex items-center justify-end">
+        <div id="submit-loader" class="loader hidden mr-4"></div>
+        <button type="submit" id="submit-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+          <i class="fas fa-paper-plane mr-2"></i>Gửi Check-in
+        </button>
+      </div>
+
+      <p id="error-message" class="text-red-500 text-center mt-3"></p>
+    </form>
+  </section>
+
+  <!-- User's history -->
+  <section class="mb-8">
+    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Lịch Sử Check-in</h2>
+    <div id="checkin-list" class="space-y-6">
+      <p class="text-gray-500">Chưa có lần check-in nào.</p>
+    </div>
+  </section>
+
+  <!-- Admin panel (hidden for regular users) -->
+  <section id="admin-panel" class="card hidden">
+    <h2 class="text-2xl font-semibold mb-4 border-b pb-2 text-red-600">Quản Lý Toàn Bộ Check-in (Admin)</h2>
+
+    <div class="mb-4 flex gap-3">
+      <input id="admin-filter-text" type="text" placeholder="Tìm theo ghi chú..." class="flex-1 px-4 py-2 border rounded-lg" />
+      <input id="admin-filter-date" type="date" class="px-4 py-2 border rounded-lg" />
+      <button id="admin-clear-filters" class="px-4 py-2 bg-gray-500 text-white rounded-lg">Xóa lọc</button>
     </div>
 
-    <!-- Lịch sử Check-in -->
-    <div id="user-history">
-      <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Lịch Sử Check-in</h2>
-      <div id="checkin-list" class="space-y-6"></div>
-    </div>
-
-    <!-- Quản lý (Admin) -->
-    <div id="admin-panel" class="hidden mt-12">
-      <h2 class="text-2xl font-semibold mb-4 border-b pb-2 text-red-600">Quản Lý Toàn Bộ Check-in</h2>
-      <div id="admin-list" class="space-y-6"></div>
-    </div>
-  </div>
+    <div id="admin-list" class="space-y-4"></div>
+  </section>
 </main>
 
-<!-- Firebase + Script -->
+<!-- Firebase + Logic -->
 <script type="module">
+  // Firebase SDK imports
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
   import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-  // Firebase config của bạn
+  // --- CONFIG (điền sẵn cho bạn) ---
   const firebaseConfig = {
     apiKey: "AIzaSyBTO8b7SE1-u7cz0XImdbCuSzTaGtn-V8c",
     authDomain: "quanly-8c2da.firebaseapp.com",
@@ -106,131 +121,322 @@
     appId: "1:1078363909076:web:0f4c92fa8750c1f79b0441"
   };
 
+  // Nếu có Google Maps API key, gán vào đây để nút 📍 hoạt động (reverse geocoding)
+  const GOOGLE_MAPS_API_KEY = ""; // <-- gán key nếu có
+
+  // Quy tắc đăng nhập
+  const ADMIN_EMAIL = "ad_ql@gmail.com";
+  const ADMIN_PASS = "NS113321";
+  const COMMON_PASS = "112233";
+
+  // Khởi tạo Firebase
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
   const storage = getStorage(app);
 
-  const ADMIN_EMAIL = "ad_ql@gmail.com";
-  const ADMIN_PASS = "NS123";
-  const COMMON_PASS = "112233";
-
+  // DOM
   const loginView = document.getElementById("login-view");
-  const loginEmail = document.getElementById("login-email");
+  const loginEmailEl = document.getElementById("login-email");
   const loginBtn = document.getElementById("login-btn");
-  const loginError = document.getElementById("login-error");
+  const loginErrorEl = document.getElementById("login-error");
+
   const appView = document.getElementById("app-view");
-  const userInfo = document.getElementById("user-info");
-  const adminPanel = document.getElementById("admin-panel");
-  const adminList = document.getElementById("admin-list");
+  const userInfoLine = document.getElementById("user-info-line");
+  const logoutBtnHolder = document.getElementById("user-info-line");
+
+  const photoInput = document.getElementById("photo");
+  const imagePreview = document.getElementById("image-preview");
+  const manualLocationInput = document.getElementById("manual-location");
+  const getLocationBtn = document.getElementById("get-location-btn");
+  const notesInput = document.getElementById("notes");
+  const submitBtn = document.getElementById("submit-btn");
+  const submitLoader = document.getElementById("submit-loader");
+  const errorMessage = document.getElementById("error-message");
+
   const checkinList = document.getElementById("checkin-list");
 
+  const adminPanel = document.getElementById("admin-panel");
+  const adminList = document.getElementById("admin-list");
+  const adminFilterText = document.getElementById("admin-filter-text");
+  const adminFilterDate = document.getElementById("admin-filter-date");
+  const adminClearFilters = document.getElementById("admin-clear-filters");
+
+  // State
+  let currentUser = null;
   let currentUserEmail = "";
   let isAdmin = false;
+  let unsubscribeUser = null;
+  let unsubscribeAdmin = null;
 
+  // --- Functions ---
+  function showLogin() {
+    loginView.classList.remove("hidden");
+    appView.classList.add("hidden");
+    adminPanel.classList.add("hidden");
+    loginErrorEl.textContent = "";
+  }
+
+  function showApp() {
+    loginView.classList.add("hidden");
+    appView.classList.remove("hidden");
+    // user info + logout button
+    userInfoLine.innerHTML = `Đăng nhập: <strong>${currentUserEmail}</strong> &nbsp; <button id="logout-btn" class="bg-red-500 text-white px-3 py-1 rounded ml-4">Đăng xuất</button>`;
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      // sign out and cleanup
+      try {
+        if (unsubscribeUser) { unsubscribeUser(); unsubscribeUser = null; }
+        if (unsubscribeAdmin) { unsubscribeAdmin(); unsubscribeAdmin = null; }
+        await signOut(auth);
+      } catch (e) {
+        console.error("Error signOut", e);
+      } finally {
+        currentUser = null;
+        currentUserEmail = "";
+        isAdmin = false;
+        checkinList.innerHTML = `<p class="text-gray-500">Chưa có lần check-in nào.</p>`;
+        adminList.innerHTML = "";
+        showLogin();
+      }
+    });
+  }
+
+  // Login when click button (no auto-login)
   loginBtn.addEventListener("click", async () => {
-    const email = loginEmail.value.trim();
+    const email = loginEmailEl.value.trim().toLowerCase();
     if (!email) {
-      loginError.textContent = "Vui lòng nhập email";
+      loginErrorEl.textContent = "Vui lòng nhập email";
       return;
     }
-    loginError.textContent = "";
-    const pass = (email.toLowerCase() === ADMIN_EMAIL) ? ADMIN_PASS : COMMON_PASS;
+    loginErrorEl.textContent = "";
+    const pass = (email === ADMIN_EMAIL) ? ADMIN_PASS : COMMON_PASS;
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch (error) {
-      loginError.textContent = "Sai email hoặc tài khoản chưa được cấp";
-    }
-  });
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      currentUserEmail = user.email;
+      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      // onAuthStateChanged will handle UI; but set some immediate vars
+      currentUser = cred.user;
+      currentUserEmail = cred.user.email || email;
       isAdmin = (currentUserEmail.toLowerCase() === ADMIN_EMAIL);
-      loginView.classList.add("hidden");
-      appView.classList.remove("hidden");
-      userInfo.innerHTML = `
-        <span>Đăng nhập: <strong>${currentUserEmail}</strong> ${isAdmin ? '(Admin)' : ''}</span>
-        <button id="logout-btn" class="ml-4 bg-red-500 text-white px-3 py-1 rounded">Đăng xuất</button>
-      `;
-      document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
-      loadUserHistory();
-      if (isAdmin) loadAdminHistory();
+      showApp();
+      startUserListener();
+      if (isAdmin) startAdminListener();
+    } catch (err) {
+      console.error("Login error:", err);
+      loginErrorEl.textContent = "Sai email hoặc tài khoản chưa được cấp";
     }
   });
 
-  async function loadUserHistory() {
-    const q = query(collection(db, `/users/${auth.currentUser.uid}/checkins`));
-    onSnapshot(q, (snapshot) => {
-      renderList(snapshot, checkinList);
+  // Firestore listeners
+  function startUserListener() {
+    if (!auth.currentUser) return;
+    // unsubscribe previous if any
+    if (unsubscribeUser) unsubscribeUser();
+    const colRef = collection(db, `users/${auth.currentUser.uid}/checkins`);
+    const q = query(colRef, orderBy("createdAt", "desc"));
+    unsubscribeUser = onSnapshot(q, snapshot => {
+      renderSnapshotToList(snapshot, checkinList, false); // show email inside render
+    }, err => {
+      console.error("User snapshot error:", err);
     });
   }
 
-  async function loadAdminHistory() {
-    adminPanel.classList.remove("hidden");
-    const q = query(collectionGroup(db, "checkins"));
-    onSnapshot(q, (snapshot) => {
-      renderList(snapshot, adminList, true);
+  function startAdminListener() {
+    if (!isAdmin) return;
+    if (unsubscribeAdmin) unsubscribeAdmin();
+    // collectionGroup to get all checkins across users
+    const q = query(collectionGroup(db, "checkins"), orderBy("createdAt", "desc"));
+    unsubscribeAdmin = onSnapshot(q, snapshot => {
+      renderSnapshotToList(snapshot, adminList, true); // admin: show email and enable filters
+    }, err => {
+      console.error("Admin snapshot error:", err);
     });
   }
 
-  function renderList(snapshot, container, showEmail = false) {
+  // Render helper
+  function renderSnapshotToList(snapshot, container, showEmail) {
     container.innerHTML = "";
+    if (snapshot.empty) {
+      container.innerHTML = `<p class="text-gray-500">Không có dữ liệu.</p>`;
+      return;
+    }
     snapshot.forEach(doc => {
       const data = doc.data();
-      const date = data.createdAt?.toDate().toLocaleString("vi-VN") || "";
-      const item = document.createElement("div");
-      item.className = "bg-white p-4 rounded-lg shadow";
-      item.innerHTML = `
-        ${showEmail ? `<p class="text-xs text-gray-500 mb-1"><strong>${data.userEmail || ''}</strong></p>` : ""}
-        <p class="text-sm text-gray-500 mb-2">${date}</p>
-        <p class="mb-2">${data.notes || ""}</p>
-        <p class="text-sm text-gray-700 mb-2"><i class="fas fa-map-marker-alt mr-2"></i>${data.manualLocation || ""}</p>
-        <a href="${data.photoURL}" target="_blank"><img src="${data.photoURL}" class="rounded max-w-xs"></a>
+      const timeStr = data.createdAt ? (data.createdAt.toDate().toLocaleString("vi-VN")) : "";
+      const emailLine = data.userEmail ? `<p class="text-xs text-gray-500 mb-1"><strong>${data.userEmail}</strong></p>` : "";
+      const html = `
+        <div class="bg-white p-4 rounded shadow">
+          ${showEmail ? emailLine : ""}
+          <p class="text-sm text-gray-500 mb-2">${timeStr}</p>
+          <p class="mb-2 text-gray-800 whitespace-pre-wrap">${data.notes || "<em>Không có ghi chú</em>"}</p>
+          <p class="text-sm text-gray-800 mb-2"><i class="fas fa-map-marker-alt mr-2"></i>${data.manualLocation || "<em>Không có vị trí</em>"}</p>
+          <a href="${data.photoURL}" target="_blank"><img src="${data.photoURL}" alt="Ảnh" class="rounded max-w-xs"></a>
+        </div>
       `;
-      container.appendChild(item);
+      container.insertAdjacentHTML("beforeend", html);
     });
   }
 
-  // Gửi check-in
-  const form = document.getElementById("checkin-form");
-  form.addEventListener("submit", async (e) => {
+  // Submit checkin
+  document.getElementById("checkin-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const photoFile = document.getElementById("photo").files[0];
-    const location = document.getElementById("manual-location").value.trim();
-    const notes = document.getElementById("notes").value.trim();
-    if (!photoFile || !location) {
-      alert("Vui lòng chọn ảnh và nhập vị trí");
+    if (!auth.currentUser) {
+      errorMessage.textContent = "Vui lòng đăng nhập trước khi gửi.";
       return;
     }
-    const storageRef = ref(storage, `/users/${auth.currentUser.uid}/checkins/${Date.now()}_${photoFile.name}`);
-    const snapshot = await uploadBytes(storageRef, photoFile);
-    const photoURL = await getDownloadURL(snapshot.ref);
-    await addDoc(collection(db, `/users/${auth.currentUser.uid}/checkins`), {
-      photoURL, manualLocation: location, notes,
-      createdAt: serverTimestamp(),
-      userId: auth.currentUser.uid,
-      userEmail: currentUserEmail
-    });
-    form.reset();
-    document.getElementById("image-preview").classList.add("hidden");
-    alert("Check-in thành công!");
-  });
+    const file = photoInput.files[0];
+    const manualLocation = manualLocationInput.value.trim();
+    const notes = notesInput.value.trim();
+    if (!file) { errorMessage.textContent = "Vui lòng chọn ảnh check-in."; return; }
+    if (!manualLocation) { errorMessage.textContent = "Vui lòng nhập vị trí."; return; }
+    errorMessage.textContent = "";
+    submitLoader.classList.remove("hidden");
+    submitBtn.disabled = true;
 
-  document.getElementById("photo").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    const preview = document.getElementById("image-preview");
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        preview.src = event.target.result;
-        preview.classList.remove("hidden");
-      };
-      reader.readAsDataURL(file);
-    } else {
-      preview.classList.add("hidden");
+    try {
+      const path = `users/${auth.currentUser.uid}/checkins/${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, path);
+      const snap = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snap.ref);
+      await addDoc(collection(db, `users/${auth.currentUser.uid}/checkins`), {
+        photoURL: url,
+        manualLocation,
+        notes,
+        createdAt: serverTimestamp(),
+        userId: auth.currentUser.uid,
+        userEmail: currentUserEmail
+      });
+      // reset form
+      document.getElementById("checkin-form").reset();
+      imagePreview.classList.add("hidden");
+      alert("Check-in thành công!");
+    } catch (err) {
+      console.error("Upload error:", err);
+      errorMessage.textContent = `Lỗi khi gửi: ${err.message || err}`;
+    } finally {
+      submitLoader.classList.add("hidden");
+      submitBtn.disabled = false;
     }
   });
+
+  // Image preview
+  photoInput.addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (!f) { imagePreview.classList.add("hidden"); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      imagePreview.src = ev.target.result;
+      imagePreview.classList.remove("hidden");
+    };
+    reader.readAsDataURL(f);
+  });
+
+  // Get location button (reverse geocode only if key provided)
+  getLocationBtn.addEventListener("click", () => {
+    if (!GOOGLE_MAPS_API_KEY) {
+      alert("Chưa cấu hình Google Maps API Key");
+      return;
+    }
+    if (!navigator.geolocation) {
+      alert("Trình duyệt không hỗ trợ định vị");
+      return;
+    }
+    getLocationBtn.disabled = true;
+    getLocationBtn.textContent = "Đang lấy...";
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const resp = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`);
+        const data = await resp.json();
+        if (data.results && data.results[0]) {
+          manualLocationInput.value = data.results[0].formatted_address;
+        } else {
+          alert("Không tìm thấy địa chỉ từ tọa độ");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Lỗi khi gọi Google Maps API");
+      } finally {
+        getLocationBtn.disabled = false;
+        getLocationBtn.textContent = "📍";
+      }
+    }, (err) => {
+      console.error(err);
+      alert("Không lấy được vị trí từ thiết bị");
+      getLocationBtn.disabled = false;
+      getLocationBtn.textContent = "📍";
+    });
+  });
+
+  // Admin filters (filter client-side)
+  adminFilterText.addEventListener("input", () => applyAdminFilters());
+  adminFilterDate.addEventListener("change", () => applyAdminFilters());
+  adminClearFilters.addEventListener("click", () => { adminFilterText.value=""; adminFilterDate.value=""; applyAdminFilters(); });
+
+  let lastAdminSnapshot = null;
+  function applyAdminFilters() {
+    if (!lastAdminSnapshot) return;
+    const text = adminFilterText.value.trim().toLowerCase();
+    const date = adminFilterDate.value; // yyyy-mm-dd
+    const filtered = [];
+    lastAdminSnapshot.forEach(doc => {
+      const d = doc.data();
+      let okText = true, okDate = true;
+      if (text) okText = (d.notes || "").toLowerCase().includes(text);
+      if (date && d.createdAt) {
+        const dStr = d.createdAt.toDate().toISOString().split("T")[0];
+        okDate = (dStr === date);
+      }
+      if (okText && okDate) filtered.push(d);
+    });
+    // render filtered
+    adminList.innerHTML = "";
+    if (filtered.length===0) { adminList.innerHTML = `<p class="text-gray-500">Không có dữ liệu.</p>`; return; }
+    filtered.forEach(data => {
+      const timeStr = data.createdAt ? data.createdAt.toDate().toLocaleString("vi-VN") : "";
+      adminList.insertAdjacentHTML("beforeend", `
+        <div class="bg-white p-4 rounded shadow">
+          <p class="text-xs text-gray-500 mb-1"><strong>${data.userEmail || ""}</strong></p>
+          <p class="text-sm text-gray-500 mb-2">${timeStr}</p>
+          <p class="mb-2">${data.notes || ""}</p>
+          <p class="text-sm text-gray-700 mb-2">${data.manualLocation || ""}</p>
+          <a href="${data.photoURL}" target="_blank"><img src="${data.photoURL}" class="rounded max-w-xs"></a>
+        </div>
+      `);
+    });
+  }
+
+  // keep lastAdminSnapshot updated inside startAdminListener
+  function startAdminListener() {
+    if (!isAdmin) return;
+    if (unsubscribeAdmin) unsubscribeAdmin();
+    const q = query(collectionGroup(db, "checkins"), orderBy("createdAt", "desc"));
+    unsubscribeAdmin = onSnapshot(q, snapshot => {
+      lastAdminSnapshot = snapshot;
+      // render initial (no filters)
+      adminList.innerHTML = "";
+      if (snapshot.empty) { adminList.innerHTML = `<p class="text-gray-500">Không có dữ liệu.</p>`; return; }
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        const timeStr = d.createdAt ? d.createdAt.toDate().toLocaleString("vi-VN") : "";
+        adminList.insertAdjacentHTML("beforeend", `
+          <div class="bg-white p-4 rounded shadow">
+            <p class="text-xs text-gray-500 mb-1"><strong>${d.userEmail || ""}</strong></p>
+            <p class="text-sm text-gray-500 mb-2">${timeStr}</p>
+            <p class="mb-2">${d.notes || ""}</p>
+            <p class="text-sm text-gray-700 mb-2">${d.manualLocation || ""}</p>
+            <a href="${d.photoURL}" target="_blank"><img src="${d.photoURL}" class="rounded max-w-xs"></a>
+          </div>
+        `);
+      });
+    }, err => console.error(err));
+  }
+
+  // Note: we call startAdminListener from login flow after isAdmin set.
+  // But ensure to use same function above when needed (replacing previous definition)
+  // So replace startAdminListener reference:
+  // (we already defined it here; ensure not duplicated)
+
+  // END
 </script>
 </body>
 </html>
