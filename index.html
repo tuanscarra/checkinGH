@@ -1,246 +1,226 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ứng dụng Check-in</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { background-color: #f3f4f6; }
-    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
-    #image-preview { max-width: 100%; max-height: 200px; border-radius: 0.5rem; object-fit: cover; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Check-in Giao Hàng</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    body { background-color: #f9fafb; font-family: Arial, sans-serif; }
+    #image-preview { max-height: 200px; margin-top: 10px; border-radius: 8px; }
+</style>
 </head>
 <body class="text-gray-800">
 
-<!-- Form đăng nhập -->
-<div id="login-view" class="fixed inset-0 bg-gray-100 flex items-center justify-center">
-  <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm">
-    <h2 class="text-xl font-bold mb-4">Đăng nhập</h2>
-    <input id="login-email" type="email" placeholder="Email" class="w-full mb-3 px-3 py-2 border rounded">
+<!-- Màn hình đăng nhập -->
+<div id="login-view" class="min-h-screen flex items-center justify-center bg-gray-100">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+    <h2 class="text-xl font-bold text-center mb-4">Đăng nhập hệ thống</h2>
+    <input id="login-email" type="email" placeholder="Nhập email" class="w-full mb-3 px-3 py-2 border rounded">
     <button id="login-btn" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Đăng nhập</button>
-    <p id="login-error" class="text-red-500 mt-2 text-center"></p>
+    <p id="login-error" class="text-red-500 mt-2 text-center text-sm"></p>
   </div>
 </div>
 
 <!-- Giao diện chính -->
-<main id="app-view" class="hidden">
-  <div class="container mx-auto p-4 md:p-8 max-w-6xl">
-    <header class="text-center mb-8">
-      <h1 class="text-3xl font-bold text-blue-600">Trình Quản Lý Giao Hàng</h1>
-      <div class="mt-4 text-sm text-gray-600" id="user-info"></div>
-    </header>
-
-    <!-- Form Check-in -->
-    <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-      <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Tạo Check-in Mới</h2>
-      <form id="checkin-form">
-        <input type="file" id="photo" accept="image/*" required class="mb-4">
-        <div class="mt-4 text-center"><img id="image-preview" class="hidden" alt="Xem trước ảnh"/></div>
-
-        <div class="flex mb-4">
-          <input type="text" id="manual-location" placeholder="Vị trí" class="flex-1 px-3 py-2 border rounded-l">
-          <button type="button" id="get-location-btn" class="bg-green-500 text-white px-4 rounded-r">📍</button>
-        </div>
-
-        <textarea id="notes" rows="4" placeholder="Ghi chú" class="w-full mb-4 px-3 py-2 border rounded"></textarea>
-        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded">Gửi Check-in</button>
-      </form>
-    </div>
-
-    <!-- Lịch sử Check-in -->
-    <div id="user-history">
-      <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Lịch Sử Check-in</h2>
-      <div id="checkin-list" class="space-y-6"></div>
-    </div>
-
-    <!-- Quản lý Admin -->
-    <div id="admin-panel" class="hidden mt-12">
-      <h2 class="text-2xl font-semibold mb-4 border-b pb-2 text-red-600">Quản Lý Toàn Bộ Check-in</h2>
-      <div id="admin-list" class="space-y-6"></div>
+<div id="app-view" class="hidden max-w-5xl mx-auto p-4">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-blue-600">Quản Lý Check-in</h1>
+    <div>
+      <span id="user-info" class="text-sm text-gray-700"></span>
+      <button id="logout-btn" class="ml-3 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Đăng xuất</button>
     </div>
   </div>
-</main>
+
+  <!-- Form check-in -->
+  <div class="bg-white p-5 rounded-lg shadow mb-8">
+    <h2 class="text-lg font-semibold mb-4 border-b pb-2">Tạo check-in</h2>
+    <form id="checkin-form">
+      <input type="file" id="photo" accept="image/*" class="mb-3 block w-full" required>
+      <img id="image-preview" class="hidden"/>
+
+      <div class="flex mb-3">
+        <input type="text" id="manual-location" placeholder="Nhập địa chỉ" class="flex-1 px-3 py-2 border rounded-l" required>
+        <button type="button" id="get-location-btn" class="bg-green-500 text-white px-4 rounded-r">📍</button>
+      </div>
+
+      <textarea id="notes" rows="3" placeholder="Ghi chú" class="w-full mb-3 px-3 py-2 border rounded"></textarea>
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Gửi check-in</button>
+    </form>
+  </div>
+
+  <!-- Lịch sử của user -->
+  <div>
+    <h2 class="text-lg font-semibold mb-4 border-b pb-2">Lịch sử check-in</h2>
+    <div id="checkin-list" class="space-y-4"></div>
+  </div>
+
+  <!-- Admin xem tất cả -->
+  <div id="admin-panel" class="hidden mt-10">
+    <h2 class="text-lg font-semibold mb-4 border-b pb-2 text-red-600">Tất cả check-in</h2>
+    <div id="admin-list" class="space-y-4"></div>
+  </div>
+</div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyBTO8b7SE1-u7cz0XImdbCuSzTaGtn-V8c",
-    authDomain: "quanly-8c2da.firebaseapp.com",
-    projectId: "quanly-8c2da",
-    storageBucket: "quanly-8c2da.firebasestorage.app",
-    messagingSenderId: "1078363909076",
-    appId: "1:1078363909076:web:0f4c92fa8750c1f79b0441"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyBTO8b7SE1-u7cz0XImdbCuSzTaGtn-V8c",
+  authDomain: "quanly-8c2da.firebaseapp.com",
+  projectId: "quanly-8c2da",
+  storageBucket: "quanly-8c2da.firebasestorage.app",
+  messagingSenderId: "1078363909076",
+  appId: "1:1078363909076:web:0f4c92fa8750c1f79b0441"
+};
 
-  const GOOGLE_MAPS_API_KEY = ""; // Thêm key ở đây khi có
+const GOOGLE_MAPS_API_KEY = ""; // thêm key nếu muốn auto lấy địa chỉ
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const storage = getStorage(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
-  const ADMIN_EMAIL = "ad_ql@gmail.com";
-  const ADMIN_PASS = "NS113321";
-  const COMMON_PASS = "112233";
+const ADMIN_EMAIL = "ad_ql@gmail.com";
+const ADMIN_PASS = "NS113321";
+const COMMON_PASS = "112233";
 
-  const loginView = document.getElementById("login-view");
-  const loginEmail = document.getElementById("login-email");
-  const loginBtn = document.getElementById("login-btn");
-  const loginError = document.getElementById("login-error");
-  const appView = document.getElementById("app-view");
-  const userInfo = document.getElementById("user-info");
-  const adminPanel = document.getElementById("admin-panel");
-  const adminList = document.getElementById("admin-list");
-  const checkinList = document.getElementById("checkin-list");
+let currentUserEmail = "";
+let isAdmin = false;
 
-  let currentUserEmail = "";
-  let isAdmin = false;
+// Login
+document.getElementById("login-btn").addEventListener("click", async () => {
+  const email = document.getElementById("login-email").value.trim();
+  if (!email) {
+    document.getElementById("login-error").textContent = "Vui lòng nhập email";
+    return;
+  }
+  const pass = email.toLowerCase() === ADMIN_EMAIL ? ADMIN_PASS : COMMON_PASS;
+  try {
+    const userCred = await signInWithEmailAndPassword(auth, email, pass);
+    currentUserEmail = userCred.user.email;
+    isAdmin = currentUserEmail.toLowerCase() === ADMIN_EMAIL;
+    showApp();
+    loadUserHistory();
+    if (isAdmin) loadAdminHistory();
+  } catch {
+    document.getElementById("login-error").textContent = "Sai email hoặc chưa được cấp quyền";
+  }
+});
 
-  // Đăng nhập
-  loginBtn.addEventListener("click", async () => {
-    const email = loginEmail.value.trim();
-    if (!email) {
-      loginError.textContent = "Vui lòng nhập email";
-      return;
-    }
-    loginError.textContent = "";
-    const pass = (email.toLowerCase() === ADMIN_EMAIL) ? ADMIN_PASS : COMMON_PASS;
-    try {
-      const userCred = await signInWithEmailAndPassword(auth, email, pass);
-      currentUserEmail = userCred.user.email;
-      isAdmin = (currentUserEmail.toLowerCase() === ADMIN_EMAIL);
-      showAppView();
-      loadUserHistory();
-      if (isAdmin) loadAdminHistory();
-    } catch (error) {
-      loginError.textContent = "Sai email hoặc chưa được cấp tài khoản";
-    }
-  });
+// Hiển thị app
+function showApp() {
+  document.getElementById("login-view").classList.add("hidden");
+  document.getElementById("app-view").classList.remove("hidden");
+  document.getElementById("user-info").textContent = `${currentUserEmail} ${isAdmin ? "(Admin)" : ""}`;
+}
 
-  function showAppView() {
-    loginView.classList.add("hidden");
-    appView.classList.remove("hidden");
-    userInfo.innerHTML = `
-      <span>Đăng nhập: <strong>${currentUserEmail}</strong> ${isAdmin ? '(Admin)' : ''}</span>
-      <button id="logout-btn" class="ml-4 bg-red-500 text-white px-3 py-1 rounded">Đăng xuất</button>
+// Đăng xuất
+document.getElementById("logout-btn").addEventListener("click", async () => {
+  await signOut(auth);
+  document.getElementById("app-view").classList.add("hidden");
+  document.getElementById("login-view").classList.remove("hidden");
+  currentUserEmail = "";
+  isAdmin = false;
+  document.getElementById("checkin-list").innerHTML = "";
+  document.getElementById("admin-list").innerHTML = "";
+});
+
+// Load lịch sử cá nhân
+function loadUserHistory() {
+  const q = collection(db, `/users/${auth.currentUser.uid}/checkins`);
+  onSnapshot(q, (snapshot) => renderList(snapshot, document.getElementById("checkin-list"), true));
+}
+
+// Load tất cả (admin)
+function loadAdminHistory() {
+  document.getElementById("admin-panel").classList.remove("hidden");
+  const q = collectionGroup(db, "checkins");
+  onSnapshot(q, (snapshot) => renderList(snapshot, document.getElementById("admin-list"), true));
+}
+
+// Render danh sách
+function renderList(snapshot, container, showEmail) {
+  container.innerHTML = "";
+  snapshot.forEach(doc => {
+    const d = doc.data();
+    const time = d.createdAt?.toDate().toLocaleString("vi-VN") || "";
+    container.innerHTML += `
+      <div class="bg-white p-4 rounded shadow">
+        ${showEmail ? `<p class="text-xs text-gray-500 mb-1"><b>${d.userEmail || ""}</b></p>` : ""}
+        <p class="text-sm text-gray-500 mb-2">${time}</p>
+        <p class="mb-1">${d.notes || ""}</p>
+        <p class="text-sm text-gray-700 mb-2">${d.manualLocation || ""}</p>
+        <a href="${d.photoURL}" target="_blank"><img src="${d.photoURL}" class="rounded max-w-xs"></a>
+      </div>
     `;
-    document.getElementById("logout-btn").addEventListener("click", () => {
-      signOut(auth).then(() => {
-        appView.classList.add("hidden");
-        loginView.classList.remove("hidden");
-        currentUserEmail = "";
-        isAdmin = false;
-        checkinList.innerHTML = "";
-        adminList.innerHTML = "";
-      });
-    });
-  }
+  });
+}
 
-  function loadUserHistory() {
-    const q = collection(db, `/users/${auth.currentUser.uid}/checkins`);
-    onSnapshot(q, (snapshot) => {
-      renderList(snapshot, checkinList, true);
-    });
+// Submit check-in
+document.getElementById("checkin-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const photoFile = document.getElementById("photo").files[0];
+  const location = document.getElementById("manual-location").value.trim();
+  const notes = document.getElementById("notes").value.trim();
+  if (!photoFile || !location) {
+    alert("Vui lòng chọn ảnh và nhập vị trí");
+    return;
   }
+  const storageRef = ref(storage, `/users/${auth.currentUser.uid}/checkins/${Date.now()}_${photoFile.name}`);
+  const snap = await uploadBytes(storageRef, photoFile);
+  const photoURL = await getDownloadURL(snap.ref);
+  await addDoc(collection(db, `/users/${auth.currentUser.uid}/checkins`), {
+    photoURL, manualLocation: location, notes,
+    createdAt: serverTimestamp(),
+    userId: auth.currentUser.uid,
+    userEmail: currentUserEmail
+  });
+  e.target.reset();
+  document.getElementById("image-preview").classList.add("hidden");
+  alert("Check-in thành công!");
+});
 
-  function loadAdminHistory() {
-    adminPanel.classList.remove("hidden");
-    const q = collectionGroup(db, "checkins");
-    onSnapshot(q, (snapshot) => {
-      renderList(snapshot, adminList, true);
-    });
-  }
-
-  function renderList(snapshot, container, showEmail = false) {
-    container.innerHTML = "";
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const date = data.createdAt?.toDate().toLocaleString("vi-VN") || "";
-      const item = document.createElement("div");
-      item.className = "bg-white p-4 rounded shadow";
-      item.innerHTML = `
-        ${showEmail ? `<p class="text-xs text-gray-500 mb-1"><strong>${data.userEmail || ''}</strong></p>` : ""}
-        <p class="text-sm text-gray-500 mb-2">${date}</p>
-        <p class="mb-2">${data.notes || ""}</p>
-        <p class="text-sm text-gray-700 mb-2">${data.manualLocation || ""}</p>
-        <a href="${data.photoURL}" target="_blank"><img src="${data.photoURL}" class="rounded max-w-xs"></a>
-      `;
-      container.appendChild(item);
-    });
-  }
-
-  // Submit check-in
-  const form = document.getElementById("checkin-form");
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const photoFile = document.getElementById("photo").files[0];
-    const location = document.getElementById("manual-location").value.trim();
-    const notes = document.getElementById("notes").value.trim();
-    if (!photoFile || !location) {
-      alert("Vui lòng chọn ảnh và nhập vị trí");
-      return;
-    }
-    const storageRef = ref(storage, `/users/${auth.currentUser.uid}/checkins/${Date.now()}_${photoFile.name}`);
-    const snapshot = await uploadBytes(storageRef, photoFile);
-    const photoURL = await getDownloadURL(snapshot.ref);
-    await addDoc(collection(db, `/users/${auth.currentUser.uid}/checkins`), {
-      photoURL, manualLocation: location, notes,
-      createdAt: serverTimestamp(),
-      userId: auth.currentUser.uid,
-      userEmail: currentUserEmail
-    });
-    form.reset();
+// Xem trước ảnh
+document.getElementById("photo").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById("image-preview").src = ev.target.result;
+      document.getElementById("image-preview").classList.remove("hidden");
+    };
+    reader.readAsDataURL(file);
+  } else {
     document.getElementById("image-preview").classList.add("hidden");
-    alert("Check-in thành công!");
-  });
+  }
+});
 
-  // Xem trước ảnh
-  document.getElementById("photo").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    const preview = document.getElementById("image-preview");
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        preview.src = event.target.result;
-        preview.classList.remove("hidden");
-      };
-      reader.readAsDataURL(file);
-    } else {
-      preview.classList.add("hidden");
-    }
-  });
-
-  // Lấy vị trí
-  document.getElementById("get-location-btn").addEventListener("click", () => {
-    if (!GOOGLE_MAPS_API_KEY) {
-      alert("Chưa cấu hình Google Maps API Key");
-      return;
-    }
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.results && data.results[0]) {
-              document.getElementById("manual-location").value = data.results[0].formatted_address;
-            }
-          });
-      }, () => {
-        alert("Không lấy được vị trí");
-      });
-    } else {
-      alert("Trình duyệt không hỗ trợ định vị");
-    }
-  });
+// Lấy vị trí
+document.getElementById("get-location-btn").addEventListener("click", () => {
+  if (!GOOGLE_MAPS_API_KEY) {
+    alert("Chưa cấu hình Google Maps API Key");
+    return;
+  }
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.results && data.results[0]) {
+            document.getElementById("manual-location").value = data.results[0].formatted_address;
+          }
+        });
+    }, () => alert("Không lấy được vị trí"));
+  } else {
+    alert("Trình duyệt không hỗ trợ định vị");
+  }
+});
 </script>
 </body>
 </html>
