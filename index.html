@@ -6,63 +6,65 @@
 <title>Trình Quản Lý Giao Hàng</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    body { font-family: Arial, sans-serif; background: #f5f6fa; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f5f6fa; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
     .container { max-width: 960px; margin: auto; padding: 20px; }
-    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    h1 { color: #2563eb; }
+    .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 400px; }
+    h1 { color: #2563eb; text-align: center; margin-bottom: 20px; }
     button { cursor: pointer; }
     .hidden { display: none; }
-    #image-preview { max-width: 200px; border-radius: 8px; margin-top: 10px; display: none; }
+    #image-preview { max-width: 100%; border-radius: 8px; margin-top: 10px; display: none; }
     .logout-btn { background: red; color: white; border: none; padding: 6px 12px; border-radius: 5px; }
     .checkin-item img { max-width: 100%; height: auto; border-radius: 6px; margin-top: 5px; }
-    
-    /* CSS cho giao diện Admin */
-    .admin-layout {
-        display: flex;
-        gap: 20px;
-    }
-    .user-list-sidebar {
-        flex: 1;
-        border-right: 1px solid #ddd;
-        padding-right: 10px;
-        max-height: 600px;
-        overflow-y: auto;
-    }
-    .user-list-sidebar div {
-        cursor: pointer;
-        padding: 10px;
+    .admin-layout { display: flex; gap: 20px; }
+    .user-list-sidebar { flex: 1; border-right: 1px solid #ddd; padding-right: 10px; max-height: 600px; overflow-y: auto; }
+    .user-list-sidebar div { cursor: pointer; padding: 10px; border-radius: 5px; margin-bottom: 5px; transition: background-color 0.2s; }
+    .user-list-sidebar div:hover { background: #e0e7ff; }
+    .user-list-sidebar div.active { background: #2563eb; color: white; }
+    .admin-detail-panel { flex: 3; }
+    .checkin-item { margin-bottom: 15px; }
+
+    /* Style riêng cho giao diện đăng nhập mới */
+    .login-form-container { display: flex; flex-direction: column; }
+    .login-form-container input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
         border-radius: 5px;
-        margin-bottom: 5px;
-        transition: background-color 0.2s;
+        box-sizing: border-box;
+        margin-top: 5px;
+        font-size: 16px;
     }
-    .user-list-sidebar div:hover {
-        background: #e0e7ff;
-    }
-    .user-list-sidebar div.active {
+    .login-form-container label { font-weight: bold; margin-bottom: 5px; display: block; }
+    .login-form-container button {
+        width: 100%;
+        padding: 12px;
         background: #2563eb;
         color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        margin-top: 20px;
     }
-    .admin-detail-panel {
-        flex: 3;
-    }
-    .checkin-item {
-        margin-bottom: 15px;
-    }
+    .login-form-container .password-wrapper { margin-top: 15px; }
+    .login-form-container p { font-size: 14px; text-align: center; color: #666; margin-top: 20px; }
 </style>
 </head>
 <body>
 
 <div id="login-view" class="container">
     <div class="card">
-        <h2 style="text-align:center">Đăng nhập hệ thống</h2>
-        <label>Email:</label>
-        <input type="email" id="login-email" placeholder="Nhập email" style="width:100%;padding:8px;margin-bottom:10px">
-        <div id="password-wrapper" class="hidden">
-            <label>Mật khẩu:</label>
-            <input type="password" id="login-password" placeholder="Nhập mật khẩu" style="width:100%;padding:8px;margin-bottom:10px">
+        <h1>Trình Quản Lý Giao Hàng</h1>
+        <div class="login-form-container">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" placeholder="Nhập email do công ty cấp">
+            <div id="password-wrapper" class="password-wrapper hidden">
+                <label for="login-password">Mật khẩu</label>
+                <input type="password" id="login-password" placeholder="Nhập mật khẩu">
+            </div>
+            <button id="login-btn"><i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng nhập</button>
+            <p style="color:red;text-align:center;margin-top:10px" id="login-error"></p>
+            <p>Nếu chưa có tài khoản, liên hệ quản trị để được cấp email.</p>
         </div>
-        <button id="login-btn" style="width:100%;padding:10px;background:#2563eb;color:white;border:none;border-radius:5px">Đăng nhập</button>
-        <p id="login-error" style="color:red;text-align:center;margin-top:10px"></p>
     </div>
 </div>
 
