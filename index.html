@@ -1,6 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trình Quản Lý Giao Hàng</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    body { font-family: Arial, sans-serif; background: #f5f6fa; margin: 0; padding: 0; }
+    .container { max-width: 960px; margin: auto; padding: 20px; }
+    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    h1 { color: #2563eb; }
+    button { cursor: pointer; }
+    .hidden { display: none; }
+    #image-preview { max-width: 200px; border-radius: 8px; margin-top: 10px; display: none; }
+    .logout-btn { background: red; color: white; border: none; padding: 6px 12px; border-radius: 5px; }
+    .checkin-item img { max-width: 100%; height: auto; border-radius: 6px; margin-top: 5px; }
+    
+    /* CSS cho giao diện Admin */
+    .admin-layout {
+        display: flex;
+        gap: 20px;
+    }
+    .user-list-sidebar {
+        flex: 1;
+        border-right: 1px solid #ddd;
+        padding-right: 10px;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    .user-list-sidebar div {
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 5px;
+        transition: background-color 0.2s;
+    }
+    .user-list-sidebar div:hover {
+        background: #e0e7ff;
+    }
+    .user-list-sidebar div.active {
+        background: #2563eb;
+        color: white;
+    }
+    .admin-detail-panel {
+        flex: 3;
+    }
+    .checkin-item {
+        margin-bottom: 15px;
+    }
+</style>
+</head>
+<body>
+
+<div id="login-view" class="container">
+    <div class="card">
+        <h2 style="text-align:center">Đăng nhập hệ thống</h2>
+        <label>Email:</label>
+        <input type="email" id="login-email" placeholder="Nhập email" style="width:100%;padding:8px;margin-bottom:10px">
+        <div id="password-wrapper" class="hidden">
+            <label>Mật khẩu:</label>
+            <input type="password" id="login-password" placeholder="Nhập mật khẩu" style="width:100%;padding:8px;margin-bottom:10px">
+        </div>
+        <button id="login-btn" style="width:100%;padding:10px;background:#2563eb;color:white;border:none;border-radius:5px">Đăng nhập</button>
+        <p id="login-error" style="color:red;text-align:center;margin-top:10px"></p>
+    </div>
+</div>
+
+<div id="app-view" class="container hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+        <h1>Trình Quản Lý Giao Hàng</h1>
+        <div>
+            <span id="user-info" style="margin-right:10px"></span>
+            <button id="logout-btn" class="logout-btn">Đăng xuất</button>
+        </div>
+    </div>
+
+    <div id="checkin-form-card" class="card">
+        <h3><i class="fa-solid fa-plus"></i> Tạo Check-in Mới</h3>
+        <form id="checkin-form">
+            <label><i class="fa-solid fa-camera"></i> Ảnh Check-in</label>
+            <input type="file" id="photo" accept="image/*" required style="width:100%;margin-bottom:10px">
+            <img id="image-preview" />
+
+            <label><i class="fa-solid fa-location-dot"></i> Vị trí (nhập thủ công)</label>
+            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <input type="text" id="manual-location" placeholder="VD: 123 Đường ABC, Quận 1" style="flex:1;padding:8px" required>
+                <button type="button" id="get-location-btn" style="background:green;color:white;border:none;padding:0 12px;border-radius:5px">📍</button>
+            </div>
+
+            <label><i class="fa-solid fa-pen"></i> Ghi Chú</label>
+            <textarea id="notes" rows="3" placeholder="VD: Giao hàng cho anh A..." style="width:100%;padding:8px;margin-bottom:10px"></textarea>
+
+            <button type="submit" style="background:#2563eb;color:white;border:none;padding:10px 15px;border-radius:5px">
+                <i class="fa-solid fa-paper-plane"></i> Gửi Check-in
+            </button>
+        </form>
+    </div>
+
+    <div id="user-history-card" class="card">
+        <h3>Lịch Sử Check-in</h3>
+        <div id="checkin-list"></div>
+    </div>
+
+    <div id="admin-panel" class="card hidden">
+        <h3 style="color:red">Bảng điều khiển Admin</h3>
+        <div class="admin-layout">
+            <div class="user-list-sidebar">
+                <h4>Danh sách nhân viên</h4>
+                <div id="user-list">
+                    </div>
+            </div>
+            <div class="admin-detail-panel">
+                <h4>Lịch sử check-in chi tiết</h4>
+                <div id="admin-checkin-detail">
+                    <p>Vui lòng chọn một nhân viên để xem lịch sử check-in chi tiết.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, doc, setDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 const firebaseConfig = {
@@ -12,41 +135,44 @@ const firebaseConfig = {
     appId: "1:1078363909076:web:0f4c92fa8750c1f79b0441"
 };
 
-const Maps_API_KEY = ""; // thêm key nếu muốn auto lấy địa chỉ
-
+const Maps_API_KEY = "";
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
-
 const COMMON_PASS = "112233";
 
-// Lắng nghe sự thay đổi trạng thái đăng nhập của người dùng
 onAuthStateChanged(auth, user => {
     if (user) {
-        // Đã đăng nhập
         showAppView(user);
     } else {
-        // Chưa đăng nhập
         showLoginView();
     }
 });
+
+function showLoginView() {
+    document.getElementById("login-view").classList.remove("hidden");
+    document.getElementById("app-view").classList.add("hidden");
+}
 
 function showAppView(user) {
     document.getElementById("login-view").classList.add("hidden");
     document.getElementById("app-view").classList.remove("hidden");
     const isAdmin = user.email.toLowerCase().startsWith("ad_");
-    document.getElementById("user-info").textContent = `${user.email} ${isAdmin ? "(Admin)" : ""}`;
+    document.getElementById("user-info").textContent = user.email;
 
-    loadUserHistory(user.uid);
     if (isAdmin) {
-        loadAdminHistory();
+        document.getElementById("user-info").textContent += " (Admin)";
+        document.getElementById("admin-panel").classList.remove("hidden");
+        document.getElementById("checkin-form-card").classList.add("hidden");
+        document.getElementById("user-history-card").classList.add("hidden");
+        loadAdminUsers();
+    } else {
+        document.getElementById("admin-panel").classList.add("hidden");
+        document.getElementById("checkin-form-card").classList.remove("hidden");
+        document.getElementById("user-history-card").classList.remove("hidden");
+        loadUserHistory(user.uid);
     }
-}
-
-function showLoginView() {
-    document.getElementById("login-view").classList.remove("hidden");
-    document.getElementById("app-view").classList.add("hidden");
 }
 
 document.getElementById("login-email").addEventListener("input", () => {
@@ -60,64 +186,72 @@ document.getElementById("login-email").addEventListener("input", () => {
 
 document.getElementById("login-btn").addEventListener("click", async () => {
     const email = document.getElementById("login-email").value.trim();
-    const password = email.toLowerCase().startsWith("ad_")
-        ? document.getElementById("login-password").value
-        : COMMON_PASS;
+    const password = email.toLowerCase().startsWith("ad_") ?
+        document.getElementById("login-password").value :
+        COMMON_PASS;
 
     if (!email || (!password && email.toLowerCase().startsWith("ad_"))) {
-        document.getElementById("login-error").textContent = "Vui lòng nhập đầy đủ thông tin.";
+        document.getElementById("login-error").textContent = "Vui lòng nhập thông tin";
         return;
     }
     try {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCred.user;
+        const userRef = doc(db, 'usersInfo', user.uid);
+        await setDoc(userRef, { email: user.email }, { merge: true });
         document.getElementById("login-error").textContent = "";
     } catch (error) {
-        console.error("Lỗi đăng nhập:", error);
-        document.getElementById("login-error").textContent = "Email hoặc mật khẩu không đúng.";
+        document.getElementById("login-error").textContent = "Sai thông tin đăng nhập";
+        console.error("Login error:", error);
     }
 });
 
-document.getElementById("logout-btn").addEventListener("click", () => {
-    signOut(auth);
+document.getElementById("logout-btn").addEventListener("click", async () => {
+    await signOut(auth);
 });
 
 function loadUserHistory(userId) {
     const q = query(collection(db, `users/${userId}/checkins`), orderBy("createdAt", "desc"));
-    onSnapshot(q, (snapshot) => renderList(snapshot, document.getElementById("checkin-list"), false));
+    onSnapshot(q, (snapshot) => renderList(snapshot, document.getElementById("checkin-list")));
 }
 
-function loadAdminHistory() {
-    document.getElementById("admin-panel").classList.remove("hidden");
-    const checkinCollectionGroup = collection(db, `checkins`); // Note: The collectionGroup approach is more complex for nested collections. A simple query will not work directly like this.
-
-    // A more suitable approach for an admin view would be to restructure your database or use a collectionGroup query on a specific subcollection name.
-    // For now, let's assume 'checkins' is a top-level collection for admin view.
-    // As per your original code, it seems you intended to use a collectionGroup. To make it work, the 'checkins' subcollection name needs to be consistent, and the index must be created.
-    // Let's modify the code slightly to make it work conceptually.
-    
-    // Create an index for collection group query if you use the original structure:
-    // https://console.firebase.google.com/project/YOUR_PROJECT_ID/firestore/indexes?create_composite=EgJjaBAAGgUKEQE/&query=collectionGroup(checkins).orderBy(createdAt).get()
-    // The query below would be more accurate if the collection group index exists.
-    // const q = query(collectionGroup(db, 'checkins'), orderBy("createdAt", "desc"));
-    
-    // For this example, let's stick to a simpler, more direct approach if the admin view is showing all checkins.
-    // If you've been using a single collection for all checkins, the code would be different.
-    // Based on the original code's structure, the collectionGroup query is what's needed, but it requires a database index.
-    // Let's assume the index is set up, so the original code logic is fine.
-
-    // Re-instating the original, intended logic for the admin panel, assuming Firebase index is configured.
-    const adminQuery = query(collectionGroup(db, "checkins"), orderBy("createdAt", "desc"));
-    onSnapshot(adminQuery, (snapshot) => renderList(snapshot, document.getElementById("admin-list"), true));
+function loadAdminUsers() {
+    const usersInfoRef = collection(db, 'usersInfo');
+    onSnapshot(usersInfoRef, (snapshot) => {
+        const userListContainer = document.getElementById("user-list");
+        userListContainer.innerHTML = "";
+        snapshot.forEach(doc => {
+            const user = doc.data();
+            const userDiv = document.createElement("div");
+            userDiv.textContent = user.email;
+            userDiv.onclick = () => {
+                document.querySelectorAll('.user-list-sidebar div').forEach(div => div.classList.remove('active'));
+                userDiv.classList.add('active');
+                loadUserCheckins(doc.id);
+            };
+            userListContainer.appendChild(userDiv);
+        });
+    });
 }
 
-function renderList(snapshot, container, showEmail) {
+function loadUserCheckins(userId) {
+    const detailContainer = document.getElementById("admin-checkin-detail");
+    detailContainer.innerHTML = '<p>Đang tải...</p>';
+    const q = query(collection(db, `users/${userId}/checkins`), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => renderList(snapshot, detailContainer));
+}
+
+function renderList(snapshot, container) {
     container.innerHTML = "";
+    if (snapshot.empty) {
+        container.innerHTML = '<p>Không có dữ liệu.</p>';
+        return;
+    }
     snapshot.forEach(doc => {
         const d = doc.data();
         const time = d.createdAt?.toDate().toLocaleString("vi-VN") || "";
         container.innerHTML += `
             <div class="checkin-item">
-                ${showEmail ? `<b>${d.userEmail || ""}</b><br>` : ""}
                 <small>${time}</small><br>
                 <span><b>Vị trí:</b> ${d.manualLocation || ""}</span><br>
                 <span><b>Ghi chú:</b> ${d.notes || ""}</span><br>
@@ -139,19 +273,20 @@ document.getElementById("checkin-form").addEventListener("submit", async (e) => 
         return;
     }
 
-    const storageRef = ref(storage, `checkin_photos/${auth.currentUser.uid}/${Date.now()}_${photoFile.name}`);
+    const user = auth.currentUser;
+    const storageRef = ref(storage, `checkin_photos/${user.uid}/${Date.now()}_${photoFile.name}`);
     
     try {
         const snap = await uploadBytes(storageRef, photoFile);
         const photoURL = await getDownloadURL(snap.ref);
 
-        await addDoc(collection(db, `users/${auth.currentUser.uid}/checkins`), {
-            photoURL, 
-            manualLocation: location, 
+        await addDoc(collection(db, `users/${user.uid}/checkins`), {
+            photoURL,
+            manualLocation: location,
             notes,
             createdAt: serverTimestamp(),
-            userId: auth.currentUser.uid,
-            userEmail: auth.currentUser.email
+            userId: user.uid,
+            userEmail: user.email
         });
 
         alert("Check-in thành công!");
@@ -203,3 +338,6 @@ document.getElementById("get-location-btn").addEventListener("click", () => {
         alert("Trình duyệt không hỗ trợ định vị.");
     }
 });
+</script>
+</body>
+</html>
