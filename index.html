@@ -1,101 +1,18 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trình Quản Lý Giao Hàng</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-    body { font-family: Arial, sans-serif; background: #f5f6fa; margin: 0; padding: 0; }
-    .container { max-width: 800px; margin: auto; padding: 20px; }
-    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    h1 { color: #2563eb; }
-    button { cursor: pointer; }
-    .hidden { display: none; }
-    #image-preview { max-width: 200px; border-radius: 8px; margin-top: 10px; display: none; }
-    .logout-btn { background: red; color: white; border: none; padding: 6px 12px; border-radius: 5px; }
-    .checkin-item img { max-width: 150px; border-radius: 6px; margin-top: 5px; }
-</style>
-</head>
-<body>
-
-<!-- Đăng nhập -->
-<div id="login-view" class="container">
-    <div class="card">
-        <h2 style="text-align:center">Đăng nhập hệ thống</h2>
-        <label>Email:</label>
-        <input type="email" id="login-email" placeholder="Nhập email" style="width:100%;padding:8px;margin-bottom:10px">
-        <div id="password-wrapper" class="hidden">
-            <label>Mật khẩu:</label>
-            <input type="password" id="login-password" placeholder="Nhập mật khẩu" style="width:100%;padding:8px;margin-bottom:10px">
-        </div>
-        <button id="login-btn" style="width:100%;padding:10px;background:#2563eb;color:white;border:none;border-radius:5px">Đăng nhập</button>
-        <p id="login-error" style="color:red;text-align:center;margin-top:10px"></p>
-    </div>
-</div>
-
-<!-- App -->
-<div id="app-view" class="container hidden">
-    <div class="flex" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
-        <h1>Trình Quản Lý Giao Hàng</h1>
-        <div>
-            <span id="user-info" style="margin-right:10px"></span>
-            <button id="logout-btn" class="logout-btn">Đăng xuất</button>
-        </div>
-    </div>
-
-    <!-- Form check-in -->
-    <div class="card">
-        <h3><i class="fa-solid fa-plus"></i> Tạo Check-in Mới</h3>
-        <form id="checkin-form">
-            <label><i class="fa-solid fa-camera"></i> Ảnh Check-in</label>
-            <input type="file" id="photo" accept="image/*" required>
-            <img id="image-preview" />
-
-            <label><i class="fa-solid fa-location-dot"></i> Vị trí (nhập thủ công)</label>
-            <div style="display:flex">
-                <input type="text" id="manual-location" placeholder="VD: 123 Đường ABC, Quận 1" style="flex:1;padding:8px" required>
-                <button type="button" id="get-location-btn" style="background:green;color:white;border:none;padding:0 12px">📍</button>
-            </div>
-
-            <label><i class="fa-solid fa-pen"></i> Ghi Chú</label>
-            <textarea id="notes" rows="3" placeholder="VD: Giao hàng cho anh A..." style="width:100%;padding:8px"></textarea>
-
-            <button type="submit" style="margin-top:10px;background:#2563eb;color:white;border:none;padding:10px 15px;border-radius:5px">
-                <i class="fa-solid fa-paper-plane"></i> Gửi Check-in
-            </button>
-        </form>
-    </div>
-
-    <!-- Lịch sử -->
-    <div class="card">
-        <h3>Lịch Sử Check-in</h3>
-        <div id="checkin-list"></div>
-    </div>
-
-    <!-- Admin -->
-    <div id="admin-panel" class="card hidden">
-        <h3 style="color:red">Tất Cả Check-in (Admin)</h3>
-        <div id="admin-list"></div>
-    </div>
-</div>
-
-<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBTO8b7SE1-u7cz0XImdbCuSzTaGtn-V8c",
-  authDomain: "quanly-8c2da.firebaseapp.com",
-  projectId: "quanly-8c2da",
-  storageBucket: "quanly-8c2da.firebasestorage.app",
-  messagingSenderId: "1078363909076",
-  appId: "1:1078363909076:web:0f4c92fa8750c1f79b0441"
+    apiKey: "AIzaSyBTO8b7SE1-u7cz0XImdbCuSzTaGtn-V8c",
+    authDomain: "quanly-8c2da.firebaseapp.com",
+    projectId: "quanly-8c2da",
+    storageBucket: "quanly-8c2da.firebasestorage.app",
+    messagingSenderId: "1078363909076",
+    appId: "1:1078363909076:web:0f4c92fa8750c1f79b0441"
 };
 
-const GOOGLE_MAPS_API_KEY = ""; // thêm key nếu muốn auto lấy địa chỉ
+const Maps_API_KEY = ""; // thêm key nếu muốn auto lấy địa chỉ
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -103,10 +20,35 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 const COMMON_PASS = "112233";
-let currentUserEmail = "";
-let isAdmin = false;
 
-// Hiển thị ô mật khẩu nếu email bắt đầu bằng AD_
+// Lắng nghe sự thay đổi trạng thái đăng nhập của người dùng
+onAuthStateChanged(auth, user => {
+    if (user) {
+        // Đã đăng nhập
+        showAppView(user);
+    } else {
+        // Chưa đăng nhập
+        showLoginView();
+    }
+});
+
+function showAppView(user) {
+    document.getElementById("login-view").classList.add("hidden");
+    document.getElementById("app-view").classList.remove("hidden");
+    const isAdmin = user.email.toLowerCase().startsWith("ad_");
+    document.getElementById("user-info").textContent = `${user.email} ${isAdmin ? "(Admin)" : ""}`;
+
+    loadUserHistory(user.uid);
+    if (isAdmin) {
+        loadAdminHistory();
+    }
+}
+
+function showLoginView() {
+    document.getElementById("login-view").classList.remove("hidden");
+    document.getElementById("app-view").classList.add("hidden");
+}
+
 document.getElementById("login-email").addEventListener("input", () => {
     const emailVal = document.getElementById("login-email").value.trim();
     if (emailVal.toLowerCase().startsWith("ad_")) {
@@ -116,49 +58,56 @@ document.getElementById("login-email").addEventListener("input", () => {
     }
 });
 
-// Đăng nhập
 document.getElementById("login-btn").addEventListener("click", async () => {
     const email = document.getElementById("login-email").value.trim();
-    const pass = email.toLowerCase().startsWith("ad_") 
-        ? document.getElementById("login-password").value 
+    const password = email.toLowerCase().startsWith("ad_")
+        ? document.getElementById("login-password").value
         : COMMON_PASS;
 
-    if (!email || (!pass && email.toLowerCase().startsWith("ad_"))) {
-        document.getElementById("login-error").textContent = "Vui lòng nhập thông tin";
+    if (!email || (!password && email.toLowerCase().startsWith("ad_"))) {
+        document.getElementById("login-error").textContent = "Vui lòng nhập đầy đủ thông tin.";
         return;
     }
     try {
-        const userCred = await signInWithEmailAndPassword(auth, email, pass);
-        currentUserEmail = userCred.user.email;
-        isAdmin = currentUserEmail.toLowerCase().startsWith("ad_");
-        showApp();
-        loadUserHistory();
-        if (isAdmin) loadAdminHistory();
-    } catch {
-        document.getElementById("login-error").textContent = "Sai thông tin đăng nhập";
+        await signInWithEmailAndPassword(auth, email, password);
+        document.getElementById("login-error").textContent = "";
+    } catch (error) {
+        console.error("Lỗi đăng nhập:", error);
+        document.getElementById("login-error").textContent = "Email hoặc mật khẩu không đúng.";
     }
 });
 
-function showApp() {
-    document.getElementById("login-view").classList.add("hidden");
-    document.getElementById("app-view").classList.remove("hidden");
-    document.getElementById("user-info").textContent = `${currentUserEmail} ${isAdmin ? "(Admin)" : ""}`;
-}
-
-document.getElementById("logout-btn").addEventListener("click", async () => {
-    await signOut(auth);
-    location.reload();
+document.getElementById("logout-btn").addEventListener("click", () => {
+    signOut(auth);
 });
 
-function loadUserHistory() {
-    const q = collection(db, `/users/${auth.currentUser.uid}/checkins`);
-    onSnapshot(q, (snapshot) => renderList(snapshot, document.getElementById("checkin-list"), true));
+function loadUserHistory(userId) {
+    const q = query(collection(db, `users/${userId}/checkins`), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => renderList(snapshot, document.getElementById("checkin-list"), false));
 }
 
 function loadAdminHistory() {
     document.getElementById("admin-panel").classList.remove("hidden");
-    const q = collectionGroup(db, "checkins");
-    onSnapshot(q, (snapshot) => renderList(snapshot, document.getElementById("admin-list"), true));
+    const checkinCollectionGroup = collection(db, `checkins`); // Note: The collectionGroup approach is more complex for nested collections. A simple query will not work directly like this.
+
+    // A more suitable approach for an admin view would be to restructure your database or use a collectionGroup query on a specific subcollection name.
+    // For now, let's assume 'checkins' is a top-level collection for admin view.
+    // As per your original code, it seems you intended to use a collectionGroup. To make it work, the 'checkins' subcollection name needs to be consistent, and the index must be created.
+    // Let's modify the code slightly to make it work conceptually.
+    
+    // Create an index for collection group query if you use the original structure:
+    // https://console.firebase.google.com/project/YOUR_PROJECT_ID/firestore/indexes?create_composite=EgJjaBAAGgUKEQE/&query=collectionGroup(checkins).orderBy(createdAt).get()
+    // The query below would be more accurate if the collection group index exists.
+    // const q = query(collectionGroup(db, 'checkins'), orderBy("createdAt", "desc"));
+    
+    // For this example, let's stick to a simpler, more direct approach if the admin view is showing all checkins.
+    // If you've been using a single collection for all checkins, the code would be different.
+    // Based on the original code's structure, the collectionGroup query is what's needed, but it requires a database index.
+    // Let's assume the index is set up, so the original code logic is fine.
+
+    // Re-instating the original, intended logic for the admin panel, assuming Firebase index is configured.
+    const adminQuery = query(collectionGroup(db, "checkins"), orderBy("createdAt", "desc"));
+    onSnapshot(adminQuery, (snapshot) => renderList(snapshot, document.getElementById("admin-list"), true));
 }
 
 function renderList(snapshot, container, showEmail) {
@@ -170,8 +119,8 @@ function renderList(snapshot, container, showEmail) {
             <div class="checkin-item">
                 ${showEmail ? `<b>${d.userEmail || ""}</b><br>` : ""}
                 <small>${time}</small><br>
-                <span>${d.manualLocation || ""}</span><br>
-                <span>${d.notes || ""}</span><br>
+                <span><b>Vị trí:</b> ${d.manualLocation || ""}</span><br>
+                <span><b>Ghi chú:</b> ${d.notes || ""}</span><br>
                 <img src="${d.photoURL}" alt="Checkin">
             </div>
             <hr>
@@ -184,59 +133,73 @@ document.getElementById("checkin-form").addEventListener("submit", async (e) => 
     const photoFile = document.getElementById("photo").files[0];
     const location = document.getElementById("manual-location").value.trim();
     const notes = document.getElementById("notes").value.trim();
+
     if (!photoFile || !location) {
-        alert("Vui lòng nhập đầy đủ thông tin");
+        alert("Vui lòng nhập đầy đủ thông tin.");
         return;
     }
-    const storageRef = ref(storage, `/users/${auth.currentUser.uid}/checkins/${Date.now()}_${photoFile.name}`);
-    const snap = await uploadBytes(storageRef, photoFile);
-    const photoURL = await getDownloadURL(snap.ref);
-    await addDoc(collection(db, `/users/${auth.currentUser.uid}/checkins`), {
-        photoURL, manualLocation: location, notes,
-        createdAt: serverTimestamp(),
-        userId: auth.currentUser.uid,
-        userEmail: currentUserEmail
-    });
-    e.target.reset();
-    document.getElementById("image-preview").style.display = "none";
-    alert("Check-in thành công!");
+
+    const storageRef = ref(storage, `checkin_photos/${auth.currentUser.uid}/${Date.now()}_${photoFile.name}`);
+    
+    try {
+        const snap = await uploadBytes(storageRef, photoFile);
+        const photoURL = await getDownloadURL(snap.ref);
+
+        await addDoc(collection(db, `users/${auth.currentUser.uid}/checkins`), {
+            photoURL, 
+            manualLocation: location, 
+            notes,
+            createdAt: serverTimestamp(),
+            userId: auth.currentUser.uid,
+            userEmail: auth.currentUser.email
+        });
+
+        alert("Check-in thành công!");
+        e.target.reset();
+        document.getElementById("image-preview").style.display = "none";
+    } catch (error) {
+        console.error("Lỗi khi tạo check-in:", error);
+        alert("Có lỗi xảy ra, vui lòng thử lại.");
+    }
 });
 
 document.getElementById("photo").addEventListener("change", (e) => {
     const file = e.target.files[0];
+    const imagePreview = document.getElementById("image-preview");
     if (file) {
         const reader = new FileReader();
         reader.onload = ev => {
-            document.getElementById("image-preview").src = ev.target.result;
-            document.getElementById("image-preview").style.display = "block";
+            imagePreview.src = ev.target.result;
+            imagePreview.style.display = "block";
         };
         reader.readAsDataURL(file);
     } else {
-        document.getElementById("image-preview").style.display = "none";
+        imagePreview.style.display = "none";
     }
 });
 
 document.getElementById("get-location-btn").addEventListener("click", () => {
-    if (!GOOGLE_MAPS_API_KEY) {
-        alert("Chưa cấu hình Google Maps API Key");
+    if (!Maps_API_KEY) {
+        alert("Chưa cấu hình Google Maps API Key.");
         return;
     }
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((pos) => {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
-            fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.results && data.results[0]) {
-                        document.getElementById("manual-location").value = data.results[0].formatted_address;
-                    }
-                });
-        }, () => alert("Không lấy được vị trí"));
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${Maps_API_KEY}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.results && data.results[0]) {
+                    document.getElementById("manual-location").value = data.results[0].formatted_address;
+                }
+            } catch (error) {
+                console.error("Lỗi khi lấy địa chỉ:", error);
+                alert("Không lấy được địa chỉ từ Google Maps.");
+            }
+        }, () => alert("Không lấy được vị trí. Vui lòng kiểm tra quyền truy cập định vị."));
     } else {
-        alert("Trình duyệt không hỗ trợ định vị");
+        alert("Trình duyệt không hỗ trợ định vị.");
     }
 });
-</script>
-</body>
-</html>
