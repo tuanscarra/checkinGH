@@ -3,16 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ứng dụng Check-in Giao Hàng</title>
+  <title>Ứng dụng Check-in</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+    body { background-color: #f3f4f6; }
     .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
     #image-preview { max-width: 100%; max-height: 200px; border-radius: 0.5rem; object-fit: cover; }
-    .modal-overlay { transition: opacity 0.3s ease; }
   </style>
 </head>
 <body class="text-gray-800">
@@ -27,19 +24,11 @@
   </div>
 </div>
 
-<!-- Màn hình tải -->
-<div id="loading-view" class="hidden fixed inset-0 bg-gray-100 flex items-center justify-center">
-  <div class="flex flex-col items-center">
-    <div class="loader"></div>
-    <p class="mt-4 text-gray-600">Đang tải dữ liệu...</p>
-  </div>
-</div>
-
 <!-- Giao diện chính -->
 <main id="app-view" class="hidden">
   <div class="container mx-auto p-4 md:p-8 max-w-6xl">
-    <header class="text-center mb-8 relative">
-      <h1 class="text-3xl md:text-4xl font-bold text-blue-600">Trình Quản Lý Giao Hàng</h1>
+    <header class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-blue-600">Trình Quản Lý Giao Hàng</h1>
       <div class="mt-4 text-sm text-gray-600" id="user-info"></div>
     </header>
 
@@ -47,32 +36,12 @@
     <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
       <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Tạo Check-in Mới</h2>
       <form id="checkin-form">
-        <div class="mb-4">
-          <label for="photo" class="block text-gray-700 font-medium mb-2"><i class="fas fa-camera mr-2"></i>Ảnh Check-in</label>
-          <input type="file" id="photo" accept="image/*" required
-            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-          <div class="mt-4 text-center"><img id="image-preview" class="hidden" alt="Xem trước ảnh"/></div>
-        </div>
-        <div class="mb-4">
-          <label for="manual-location" class="block text-gray-700 font-medium mb-2"><i class="fas fa-map-marker-alt mr-2"></i>Vị trí (nhập thủ công)</label>
-          <input type="text" id="manual-location" placeholder="Ví dụ: 123 Đường ABC, Quận 1"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-        <div class="mb-4">
-          <label for="notes" class="block text-gray-700 font-medium mb-2"><i class="fas fa-pencil-alt mr-2"></i>Ghi Chú</label>
-          <textarea id="notes" rows="4"
-            placeholder="Ví dụ: Giao hàng cho anh A, đã nhận đủ tiền..."
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-        </div>
-        <div class="flex items-center justify-end">
-          <div id="loader" class="loader hidden mr-4"></div>
-          <button type="submit" id="submit-btn"
-            class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300">
-            <i class="fas fa-paper-plane mr-2"></i>Gửi Check-in
-          </button>
-        </div>
+        <input type="file" id="photo" accept="image/*" required class="mb-4">
+        <div class="mt-4 text-center"><img id="image-preview" class="hidden" alt="Xem trước ảnh"/></div>
+        <input type="text" id="manual-location" placeholder="Vị trí" class="w-full mb-4 px-3 py-2 border rounded">
+        <textarea id="notes" rows="4" placeholder="Ghi chú" class="w-full mb-4 px-3 py-2 border rounded"></textarea>
+        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded">Gửi Check-in</button>
       </form>
-      <div id="error-message" class="text-red-500 mt-4 text-center font-medium"></div>
     </div>
 
     <!-- Lịch sử Check-in -->
@@ -81,7 +50,7 @@
       <div id="checkin-list" class="space-y-6"></div>
     </div>
 
-    <!-- Quản lý (Admin) -->
+    <!-- Quản lý Admin -->
     <div id="admin-panel" class="hidden mt-12">
       <h2 class="text-2xl font-semibold mb-4 border-b pb-2 text-red-600">Quản Lý Toàn Bộ Check-in</h2>
       <div id="admin-list" class="space-y-6"></div>
@@ -89,14 +58,13 @@
   </div>
 </main>
 
-<!-- Firebase + Script -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
   import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-  // Firebase config của bạn
+  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyBTO8b7SE1-u7cz0XImdbCuSzTaGtn-V8c",
     authDomain: "quanly-8c2da.firebaseapp.com",
@@ -128,6 +96,7 @@
   let currentUserEmail = "";
   let isAdmin = false;
 
+  // Đăng nhập khi bấm nút
   loginBtn.addEventListener("click", async () => {
     const email = loginEmail.value.trim();
     if (!email) {
@@ -137,38 +106,43 @@
     loginError.textContent = "";
     const pass = (email.toLowerCase() === ADMIN_EMAIL) ? ADMIN_PASS : COMMON_PASS;
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch (error) {
-      loginError.textContent = "Sai email hoặc tài khoản chưa được cấp";
-    }
-  });
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      currentUserEmail = user.email;
+      const userCred = await signInWithEmailAndPassword(auth, email, pass);
+      currentUserEmail = userCred.user.email;
       isAdmin = (currentUserEmail.toLowerCase() === ADMIN_EMAIL);
-      loginView.classList.add("hidden");
-      appView.classList.remove("hidden");
-      userInfo.innerHTML = `
-        <span>Đăng nhập: <strong>${currentUserEmail}</strong> ${isAdmin ? '(Admin)' : ''}</span>
-        <button id="logout-btn" class="ml-4 bg-red-500 text-white px-3 py-1 rounded">Đăng xuất</button>
-      `;
-      document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
+      showAppView();
       loadUserHistory();
       if (isAdmin) loadAdminHistory();
+    } catch (error) {
+      loginError.textContent = "Sai email hoặc chưa được cấp tài khoản";
     }
   });
 
-  async function loadUserHistory() {
-    const q = query(collection(db, `/users/${auth.currentUser.uid}/checkins`));
+  function showAppView() {
+    loginView.classList.add("hidden");
+    appView.classList.remove("hidden");
+    userInfo.innerHTML = `
+      <span>Đăng nhập: <strong>${currentUserEmail}</strong> ${isAdmin ? '(Admin)' : ''}</span>
+      <button id="logout-btn" class="ml-4 bg-red-500 text-white px-3 py-1 rounded">Đăng xuất</button>
+    `;
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      signOut(auth);
+      appView.classList.add("hidden");
+      loginView.classList.remove("hidden");
+    });
+  }
+
+  // Lịch sử của người dùng
+  function loadUserHistory() {
+    const q = collection(db, `/users/${auth.currentUser.uid}/checkins`);
     onSnapshot(q, (snapshot) => {
       renderList(snapshot, checkinList);
     });
   }
 
-  async function loadAdminHistory() {
+  // Lịch sử admin (tất cả)
+  function loadAdminHistory() {
     adminPanel.classList.remove("hidden");
-    const q = query(collectionGroup(db, "checkins"));
+    const q = collectionGroup(db, "checkins");
     onSnapshot(q, (snapshot) => {
       renderList(snapshot, adminList, true);
     });
@@ -180,19 +154,19 @@
       const data = doc.data();
       const date = data.createdAt?.toDate().toLocaleString("vi-VN") || "";
       const item = document.createElement("div");
-      item.className = "bg-white p-4 rounded-lg shadow";
+      item.className = "bg-white p-4 rounded shadow";
       item.innerHTML = `
         ${showEmail ? `<p class="text-xs text-gray-500 mb-1"><strong>${data.userEmail || ''}</strong></p>` : ""}
         <p class="text-sm text-gray-500 mb-2">${date}</p>
         <p class="mb-2">${data.notes || ""}</p>
-        <p class="text-sm text-gray-700 mb-2"><i class="fas fa-map-marker-alt mr-2"></i>${data.manualLocation || ""}</p>
+        <p class="text-sm text-gray-700 mb-2">${data.manualLocation || ""}</p>
         <a href="${data.photoURL}" target="_blank"><img src="${data.photoURL}" class="rounded max-w-xs"></a>
       `;
       container.appendChild(item);
     });
   }
 
-  // Gửi check-in
+  // Submit check-in
   const form = document.getElementById("checkin-form");
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -217,6 +191,7 @@
     alert("Check-in thành công!");
   });
 
+  // Xem trước ảnh
   document.getElementById("photo").addEventListener("change", (e) => {
     const file = e.target.files[0];
     const preview = document.getElementById("image-preview");
