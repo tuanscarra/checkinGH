@@ -38,7 +38,12 @@
       <form id="checkin-form">
         <input type="file" id="photo" accept="image/*" required class="mb-4">
         <div class="mt-4 text-center"><img id="image-preview" class="hidden" alt="Xem trước ảnh"/></div>
-        <input type="text" id="manual-location" placeholder="Vị trí" class="w-full mb-4 px-3 py-2 border rounded">
+
+        <div class="flex mb-4">
+          <input type="text" id="manual-location" placeholder="Vị trí" class="flex-1 px-3 py-2 border rounded-l">
+          <button type="button" id="get-location-btn" class="bg-green-500 text-white px-4 rounded-r">📍</button>
+        </div>
+
         <textarea id="notes" rows="4" placeholder="Ghi chú" class="w-full mb-4 px-3 py-2 border rounded"></textarea>
         <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded">Gửi Check-in</button>
       </form>
@@ -74,13 +79,15 @@
     appId: "1:1078363909076:web:0f4c92fa8750c1f79b0441"
   };
 
+  const GOOGLE_MAPS_API_KEY = ""; // Thêm key ở đây khi có
+
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
   const storage = getStorage(app);
 
   const ADMIN_EMAIL = "ad_ql@gmail.com";
-  const ADMIN_PASS = "NS123";
+  const ADMIN_PASS = "NS113321";
   const COMMON_PASS = "112233";
 
   const loginView = document.getElementById("login-view");
@@ -96,7 +103,7 @@
   let currentUserEmail = "";
   let isAdmin = false;
 
-  // Đăng nhập khi bấm nút
+  // Đăng nhập
   loginBtn.addEventListener("click", async () => {
     const email = loginEmail.value.trim();
     if (!email) {
@@ -125,21 +132,24 @@
       <button id="logout-btn" class="ml-4 bg-red-500 text-white px-3 py-1 rounded">Đăng xuất</button>
     `;
     document.getElementById("logout-btn").addEventListener("click", () => {
-      signOut(auth);
-      appView.classList.add("hidden");
-      loginView.classList.remove("hidden");
+      signOut(auth).then(() => {
+        appView.classList.add("hidden");
+        loginView.classList.remove("hidden");
+        currentUserEmail = "";
+        isAdmin = false;
+        checkinList.innerHTML = "";
+        adminList.innerHTML = "";
+      });
     });
   }
 
-  // Lịch sử của người dùng
   function loadUserHistory() {
     const q = collection(db, `/users/${auth.currentUser.uid}/checkins`);
     onSnapshot(q, (snapshot) => {
-      renderList(snapshot, checkinList);
+      renderList(snapshot, checkinList, true);
     });
   }
 
-  // Lịch sử admin (tất cả)
   function loadAdminHistory() {
     adminPanel.classList.remove("hidden");
     const q = collectionGroup(db, "checkins");
@@ -204,6 +214,31 @@
       reader.readAsDataURL(file);
     } else {
       preview.classList.add("hidden");
+    }
+  });
+
+  // Lấy vị trí
+  document.getElementById("get-location-btn").addEventListener("click", () => {
+    if (!GOOGLE_MAPS_API_KEY) {
+      alert("Chưa cấu hình Google Maps API Key");
+      return;
+    }
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.results && data.results[0]) {
+              document.getElementById("manual-location").value = data.results[0].formatted_address;
+            }
+          });
+      }, () => {
+        alert("Không lấy được vị trí");
+      });
+    } else {
+      alert("Trình duyệt không hỗ trợ định vị");
     }
   });
 </script>
