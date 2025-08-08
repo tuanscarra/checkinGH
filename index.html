@@ -193,9 +193,9 @@ const firebaseConfig = {
     appId: "1:1078363909076:web:0f4c92fa8750c1f79b0441"
 };
 
-const CLOUDINARY_CLOUD_NAME = "dvx3nu0ip"; // <-- Cloud Name của bạn
-const CLOUDINARY_UPLOAD_PRESET = "checkin_images"; // <-- Đã thay thế bằng tên preset ví dụ
-const Maps_API_KEY = "";
+const CLOUDINARY_CLOUD_NAME = "dvx3nu0ip"; // Cloud Name của bạn
+const CLOUDINARY_UPLOAD_PRESET = "checkin_images"; // Tên Upload Preset đã tạo
+const Maps_API_KEY = ""; // Nếu bạn muốn dùng chức năng tự động lấy vị trí
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
